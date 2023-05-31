@@ -1,16 +1,40 @@
 // const { faker } = require('@faker-js/faker')
 
+const { haveTask } = require("../pages/tasks")
+
 Feature('tasks')
 
-Scenario.only('deve conseguir cadastrar uma nova tarefa',  ({ I }) => {
+Scenario('deve conseguir cadastrar uma nova tarefa', ({ I, tasksPage }) => {
 
     const taskName = 'fazer compras'
 
-    I.amOnPage('/')
+    I.sendDeleteRequest('/helper/tasks/' + taskName)
+    I.seeResponseCodeIsSuccessful()
 
-    I.fillField('input[placeholder$=Task]', taskName)
-    I.click('Create')
+    tasksPage.create(taskName)
+    tasksPage.haveTask(taskName)
 
-    I.see(taskName, '.task-item')
+})
 
-});
+Scenario('não permite cadastro de tarefas com nome duplicado', ({ I, tasksPage }) => {
+
+    // dado que eu tenho uma nova tarefa
+    const task = {
+        name: 'ler um livro',
+        is_done: false
+    }
+
+    I.sendDeleteRequest('/helper/tasks/' + task.name)
+    I.seeResponseCodeIsSuccessful()
+
+    // mas eu já cadastrei essa tarefa anteriormente e não percebi
+    I.sendPostRequest('/tasks', task)
+    I.seeResponseCodeIsSuccessful()
+
+    // quando eu tento realizar o cadastro novamente
+    tasksPage.create(task.name)
+
+    // então recebo uma mensagem informado sobre a duplicidade
+    tasksPage.popUpHaveText('Task already exists!')
+
+})
